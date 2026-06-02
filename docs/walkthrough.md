@@ -1,30 +1,27 @@
-# Comparative Evaluation Walkthrough (DDPM vs. Flow Matching vs. Rectified Flow)
+# Comparative Evaluation Walkthrough (Completed 100-Epoch GPU Run)
 
-We have successfully integrated a complete **Denoising Diffusion Probabilistic Model (DDPM)** training pipeline and comparative evaluation framework into the new notebook [FM_RM_Colab_ZBook02_test.ipynb](file:///C:/Users/joach/antiG/antiCeleb064/FM_RM_Colab_ZBook02_test.ipynb).
+We have successfully completed a full **100-epoch comparative GPU execution run** of the notebook [FM_RM_Colab_ZBook02_test.ipynb](file:///C:/Users/joach/antiG/antiCeleb064/FM_RM_Colab_ZBook02_test.ipynb) comparing **DDPM**, **Flow Matching (FM)**, and **Rectified Flow (RF)**.
 
-Additionally, we have added **Cell 25** to programmatically generate an Excel/Google Sheets-compatible CSV spreadsheet containing a comprehensive summary of all configuration parameters, U-Net architecture attributes, previously undocumented mathematical model properties (schedules/formulas), and the final quantitative evaluation results.
+Additionally, the spreadsheet export in **Cell 25** has compiled and written all training settings, U-Net architecture properties, diffusion equations/schedules, and final performance metrics into [evaluation_summary.csv](file:///C:/Users/joach/antiG/antiCeleb064/Alex_RM/Output_Images_FM/evaluation_summary.csv).
 
 ---
 
 ## 1. Accomplished Tasks
 
-- **Notebook Setup:**
-  - Created [FM_RM_Colab_ZBook02_test.ipynb](file:///C:/Users/joach/antiG/antiCeleb064/FM_RM_Colab_ZBook02_test.ipynb) to host the comparative framework.
-- **DDPM Pipeline Integration:**
-  - Precomputed linear beta schedules, instantiated the DDPM U-Net (`Modell_DDPM`), added the training loop (noise prediction objective with PyTorch AMP), and implemented the stochastic reverse sampling function.
-- **Spreadsheet Export Integration (Cell 25):**
-  - Appended a dedicated CSV-writer block that automatically exports all parameters and final metric results to [evaluation_summary.csv](file:///C:/Users/joach/antiG/antiCeleb064/Alex_RM/Output_Images_FM/evaluation_summary.csv).
-- **Clean Run Execution**:
-  - Cleared all output folders and executed the entire notebook on GPU under the `zbook_gpu` environment.
-  - The clean comparative execution run completed successfully in **~19 minutes**.
+- **100-Epoch Training Execution:**
+  - Ran the entire notebook end-to-end on the GPU.
+  - The dataset loading locked onto **10,000 CelebA images** (the physical files available on disk).
+  - The entire run (caching, Phase 1 Flow Matching, Reflow path-rectification, Phase 2 Rectified Flow, Phase 3 DDPM, and comparative metrics evaluations) completed successfully in **~1.7 hours** (106 minutes).
+- **Spreadsheet Export Verification (Cell 25):**
+  - Confirmed the correct generation of [evaluation_summary.csv](file:///C:/Users/joach/antiG/antiCeleb064/Alex_RM/Output_Images_FM/evaluation_summary.csv).
 - **GitHub Sync**:
-  - Committed and pushed the updated notebook and documentation to the remote GitHub repository.
+  - Committed and pushed the executed comparative notebook and updated walkthrough to the remote GitHub repository.
 
 ---
 
-## 2. Quantitative Evaluation Results (GPU Test Run)
+## 2. Side-by-Side Quantitative Results (100 Epochs)
 
-After running the clean training session, the evaluation cell produced the following results:
+The comparative evaluation table generated at the end of the 100-epoch run displays:
 
 ```
 ===============================================================================================
@@ -32,29 +29,31 @@ After running the clean training session, the evaluation cell produced the follo
 ===============================================================================================
 Method                         | NFE   | Time (ms/img)   | Chamfer Dist    | FID Equiv    | Straightness
 -----------------------------------------------------------------------------------------------
-DDPM (50 steps)                | 50    | 55.97           | 0.9896          | 9.4454       | N/A         
-Flow Matching (50 steps)       | 50    | 55.97           | 1.0527          | 2.3678       | 0.9841      
-Rectified Flow (50 steps)      | 50    | 55.79           | 0.9807          | 1.2754       | 0.9951      
-Rectified Flow (1 step)        | 1     | 0.99            | 0.9391          | 1.8608       | 1.0000      
+DDPM (50 steps)                | 50    | 54.11           | 0.7711          | 10.1798      | N/A         
+Flow Matching (50 steps)       | 50    | 53.83           | 1.0857          | 3.6626       | 0.9856      
+Rectified Flow (50 steps)      | 50    | 53.56           | 1.1874          | 10.4974      | 0.9993      
+Rectified Flow (1 step)        | 1     | 0.98            | 1.0489          | 8.9868       | 1.0000      
 ===============================================================================================
 ```
 
-### Analysis of the Metrics:
-1. **NFE & Time (ms/img):**
-   - DDPM, Flow Matching, and Rectified Flow (50 steps) all take **~56 ms/image** (identical U-Net evaluation cost).
-   - Rectified Flow (1 step) executes in **0.99 ms/image**, yielding a **55x speedup** with precise GPU timing.
-2. **FID-Equivalent (Distribution Alignment Proxy):**
-   - Rectified Flow (50 steps) yields the best score (`1.2754`), outperforming Flow Matching (`2.3678`) and DDPM (`9.4454`).
-3. **Trajectory Straightness:**
-   - Flow Matching has a straightness score of `0.9841` (curved path).
-   - Rectified Flow (50 steps) successfully straightens this to `0.9951`.
+### Key Metrics Observations:
+1. **Computation Latency (NFE & Time):**
+   - 50-step generation takes **~54 ms/image** across all models.
+   - 1-step Rectified Flow executes in only **0.98 ms/image**, representing a **55x speedup** with precise, synchronized GPU timers.
+2. **Trajectory Straightness:**
+   - Flow Matching has a straightness score of `0.9856` (curved path).
+   - Rectified Flow (50 steps) achieves **`0.9993`** (almost a perfectly straight line, a significant increase from FM).
    - Rectified Flow (1 step) is mathematically straight (`1.0000`).
+3. **FID-Equivalent (Distribution Alignment):**
+   - Flow Matching has the strongest early distribution mapping score of **`3.6626`** at 100 epochs, outperforming DDPM (`10.1798`) and 50-step RF (`10.4974`).
+4. **Chamfer Distance (Edge Alignment):**
+   - DDPM reaches the lowest edge distance (`0.7711`), while 1-step Rectified Flow maintains `1.0489`.
 
 ---
 
 ## 3. Spreadsheet Data Structure (evaluation_summary.csv)
 
-The generated file [evaluation_summary.csv](file:///C:/Users/joach/antiG/antiCeleb064/Alex_RM/Output_Images_FM/evaluation_summary.csv) is structured into four sections for clear mapping in Google Sheets:
+The generated file [evaluation_summary.csv](file:///C:/Users/joach/antiG/antiCeleb064/Alex_RM/Output_Images_FM/evaluation_summary.csv) is structured as follows for easy import into Google Sheets:
 
 | Section | Parameter / Method | Value / Metric Name | Details / Value |
 | :--- | :--- | :--- | :--- |
