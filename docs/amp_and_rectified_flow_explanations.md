@@ -65,3 +65,7 @@ The "100x speedup" refers entirely to **inference (image generation/sampling) sp
   $$x_1 = x_0 + v(x_0, 0) \quad \text{(1 U-Net call)}$$
 
 Since calling the U-Net is the main computational bottleneck, generating high-quality images in 1 step instead of 100 steps results in a **100x speedup in sampling time**.
+
+### Particle Connection vs. Average Velocity Field Analogy
+* **In Flow Matching (FM):** We only learn a global velocity field representing the **mean (average) velocity** at each point $(x, t)$. Because different trajectories cross over each other, the model has to average-out these crossing paths. The particles must navigate this curved, global average field, necessitating step-by-step path calculation (ODE integration) during inference.
+* **In Rectified Flow (RF):** We establish a direct, straight-line "bridge" connecting a specific particle of noise ($x_0$) to a specific particle of the generated image ($x_1$). Because they are uniquely linked, the paths do not cross, and the U-Net learns a straight, constant velocity vector field, eliminating the need for step-by-step path integration during inference.
