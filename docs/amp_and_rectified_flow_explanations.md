@@ -76,16 +76,16 @@ Since calling the U-Net is the main computational bottleneck, generating high-qu
 
 Below is a detailed analysis of whether we are measuring the correct parameters and if they are positioned correctly in the codebase.
 
-### Evaluation Results Table
+### Evaluation Results Table (Updated 5-Epoch Test Run)
 ```
 ===============================================================================================
                                 EVALUATION RESULTS TABLE
 ===============================================================================================
 Method                         | NFE   | Time (ms/img)   | Chamfer Dist    | FID Equiv    | Straightness
 -----------------------------------------------------------------------------------------------
-Flow Matching (50 steps)       | 50    | 48.93           | 1.0207          | 3.4623       | 0.9728      
-Rectified Flow (50 steps)      | 50    | 49.48           | 1.0136          | 2.0633       | 0.9946      
-Rectified Flow (1 step)        | 1     | 0.13            | 0.9984          | 2.0368       | 1.0000      
+Flow Matching (50 steps)       | 50    | 55.46           | 1.0256          | 7.7533       | 0.9806      
+Rectified Flow (50 steps)      | 50    | 55.61           | 0.9736          | 3.8386       | 0.9915      
+Rectified Flow (1 step)        | 1     | 1.00            | 0.8899          | 4.7356       | 1.0000      
 ===============================================================================================
 ```
 
@@ -96,16 +96,16 @@ Rectified Flow (1 step)        | 1     | 0.13            | 0.9984          | 2.0
    * **Meaning:** It tracks the exact number of times the U-Net forward pass is evaluated to generate a single batch of images.
 2. **Time (ms/img):**
    * **Verdict:** Yes, it is the standard metric to compare speed.
-   * **Meaning:** It indicates how much time is spent per generated image on the GPU. The fact that `RF (1 step)` is ~370x faster than `FM (50 steps)` demonstrates the real benefit of path-straightening.
+   * **Meaning:** It indicates how much time is spent per generated image on the GPU. The fact that `RF (1 step)` is 55x faster than `FM (50 steps)` demonstrates the real benefit of path-straightening.
 3. **FID Equivalent (Proxy for Image Quality):**
    * **Verdict:** Yes, FID (Fréchet Inception Distance) is the gold standard for image generation quality.
-   * **Meaning:** Lower values indicate the generated images have statistics closer to the real dataset. The table shows RF has significantly better quality (lower FID equivalent: 2.03 vs 3.46) than FM.
+   * **Meaning:** Lower values indicate the generated images have statistics closer to the real dataset. The table shows RF has significantly better quality (lower FID equivalent: 3.83 vs 7.75) than FM after 5 epochs of training.
 4. **Chamfer Distance:**
    * **Verdict:** Partial. Chamfer distance is usually a metric for 3D point cloud alignment.
-   * **Meaning in 2D:** If applied to images (comparing pixel-value sets or feature vectors), it acts as a geometric distance proxy. However, image-centric metrics like **LPIPS** (Learned Perceptual Image Patch Similarity) or structural MSE are more industry-standard for 2D image quality evaluation.
+   * **Meaning in 2D:** If applied to edge maps, it acts as a geometric distance proxy. The table shows that edge maps of generated images align well with real images, and Rectified Flow maintains lower Chamfer distance values.
 5. **Straightness:**
    * **Verdict:** Yes, this is the key validation parameter for Rectified Flow.
-   * **Meaning:** It is the ratio of the straight-line distance ($||x_1 - x_0||$) over the actual integrated path length. A value of `1.0000` indicates a perfectly straight line. The table confirms `RF (50 steps)` (0.9946) is significantly straighter than `FM (50 steps)` (0.9728).
+   * **Meaning:** It is the ratio of the straight-line distance ($||x_1 - x_0||$) over the actual integrated path length. A value of `1.0000` indicates a perfectly straight line. The table confirms `RF (50 steps)` (0.9915) is significantly straighter than `FM (50 steps)` (0.9806).
 
 ---
 
@@ -115,7 +115,8 @@ To ensure these metrics are accurate and unbiased, they must be recorded at spec
 
 1. **Time (ms/img) position:**
    * **Incorrect:** Wrapping the time measurement around the entire cell (includes printing, plotting, and CPU-GPU transfer overhead).
-   * **Correct:** Placing `start = time.time()` immediately before the ODE loop begins, and `end = time.time()` immediately after the final integration step finishes. Then divide `(end - start) / batch_size`.
+   * **Incorrect (Unsynchronized CUDA):** Measuring GPU loops without `torch.cuda.synchronize()`. In PyTorch, GPU kernels are launched asynchronously. Without synchronization, CPU-side timers stop immediately before the GPU has actually finished execution, yielding artificially low values (such as `0.13` ms/img).
+   * **Correct (Synchronized CUDA):** Placing `torch.cuda.synchronize()` immediately before starting the timer and immediately after finishing the loop. This blocks CPU execution until the GPU has finished all tasks, giving a true, physical time measurement (e.g. `1.00` ms/img for 1-step Rectified Flow U-Net forward pass).
 2. **Straightness position:**
    * **Correct:** Measured directly during the ODE solver loop by calculating the step-wise sum of vector displacements ($dt \times v$) and dividing the straight Euclidean line distance by this sum.
 3. **FID Equivalent / Quality Metric position:**
