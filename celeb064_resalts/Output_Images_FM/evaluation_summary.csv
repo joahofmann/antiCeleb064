@@ -1,0 +1,33 @@
+Section,Parameter / Method,Value / Metric Name,Details / Value
+Run Configuration,TEST_MODE,True,Quick pipeline testing flag
+Run Configuration,BATCH_SIZE,64,Size of training batches
+Run Configuration,LEARNING_RATE,0.0003,Adam optimizer learning rate
+Run Configuration,IMAGE_SIZE,64,Resolution height/width of CelebA images
+Run Configuration,EPOCHS,100,Target training epochs
+Run Configuration,TEST_IMAGE_LIMIT,40000,Limit on dataset size in test mode
+Run Configuration,Device,cuda,Hardware device used for training/inference
+U-Net Architecture,in_channels,3,Input image channels (RGB)
+U-Net Architecture,out_dim,3,Output channels (predicted noise or velocity)
+U-Net Architecture,down_channels,"(64, 128, 256, 512)",Feature channels in down-path blocks
+U-Net Architecture,up_channels,"(512, 256, 128, 64)",Feature channels in up-path blocks
+U-Net Architecture,time_emb_dim,32,Dimension of sinusoidal time position embeddings
+U-Net Architecture,optimizer,Adam,Weight optimization algorithm
+Flow Matching (FM),steps,50,Inference ODE integration steps
+Flow Matching (FM),dt,0.02,Euler integration step width
+Flow Matching (FM),path_formula,x_t = x_0 + t * (x_1 - x_0),Linear interpolation between noise and target
+Flow Matching (FM),v_target,x_1 - x_0,Velocity vector field prediction target
+Rectified Flow (RM),reflow_steps,50,Trajectory ODE integration steps for data rectification
+Rectified Flow (RM),path_formula,x_t = x_0 + t * (x_1_rect - x_0),Linear interpolation on straightened trajectory
+Rectified Flow (RM),v_target,x_1_rect - x_0,Straightened velocity vector prediction target
+DDPM,steps,50,Reverse diffusion sampling steps count
+DDPM,beta_start,0.0001,Starting noise variance scheduler value
+DDPM,beta_end,0.02,Ending noise variance scheduler value
+DDPM,beta_schedule,Linear,Variance scheduler configuration style
+DDPM,forward_path,x_t = sqrt(alpha_bar_t) * x_0 + sqrt(1-alpha_bar_t) * epsilon,Noising schedule equation
+DDPM,posterior_variance,betas * (1 - alpha_bar_prev) / (1 - alpha_bar),Stochastic reverse process variance
+
+Evaluation Results,Method,NFE,Time (ms/img),Chamfer Dist,FID Equiv,Straightness
+Evaluation Results,DDPM (50 steps),50,54.11,0.7711,10.1798,N/A
+Evaluation Results,Flow Matching (50 steps),50,53.83,1.0857,3.6626,0.9856
+Evaluation Results,Rectified Flow (50 steps),50,53.56,1.1874,10.4974,0.9993
+Evaluation Results,Rectified Flow (1 step),1,0.98,1.0489,8.9868,1.0000
